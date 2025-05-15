@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>6枠画像ドロップ</title>
+  <style>
+    .container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 200px);
+      gap: 10px;
+      width: 90%;
+      margin: 20px auto;
+    }
+    .box {
+      border: 2px dashed #999;
+      position: relative;
+      overflow: hidden;
+      background-color: #f0f0f0;
+    }
+    .box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="text-align:center;">画像を6つの枠にドラッグ＆ドロップ</h2>
+<div class="container">
+  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+</div>
+
+<input type="file" id="fileInput" multiple onchange="loadImages(event)">
+<div id="imageHolder" style="display:flex; flex-wrap:wrap; gap:10px; margin:10px;"></div>
+
+<script>
+function allowDrop(e) {
+  e.preventDefault();
+}
+
+function drop(e) {
+  e.preventDefault();
+  const imgId = e.dataTransfer.getData("imgId");
+  const draggedImg = document.getElementById(imgId);
+  const box = e.currentTarget;
+
+  if (box.querySelector("img")) {
+    box.removeChild(box.querySelector("img"));
+  }
+
+  const newImg = draggedImg.cloneNode(true);
+  newImg.removeAttribute("id");
+  newImg.setAttribute("draggable", false);
+  box.appendChild(newImg);
+}
+
+function loadImages(e) {
+  const files = e.target.files;
+  const holder = document.getElementById("imageHolder");
+  holder.innerHTML = "";
+  Array.from(files).forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = document.createElement("img");
+      img.src = evt.target.result;
+      img.id = "img" + i;
+      img.draggable = true;
+      img.style.width = "100px";
+      img.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("imgId", img.id);
+      });
+      holder.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+</script>
+</body>
+</html>
