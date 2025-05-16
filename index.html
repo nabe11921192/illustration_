@@ -225,25 +225,35 @@ function saveAllImages() {
     const inputLabel = wrapper.querySelector('input.label');
     const label = inputLabel ? inputLabel.value : `image${i + 1}`;
 
+    // 1. 選択解除（確実に）
     fabricCanvas.discardActiveObject();
-    fabricCanvas.renderAll();
+    fabricCanvas.requestRenderAll(); // ←次の描画フレームで確実に更新
 
-    canvasElement.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${label}.png`;
-      a.textContent = `${label}.png を保存`;
-      a.style.display = 'inline-block';
-      a.style.margin = '5px';
-      a.style.background = '#4CAF50';
-      a.style.color = 'white';
-      a.style.padding = '8px 12px';
-      a.style.borderRadius = '4px';
-      a.style.fontSize = '14px';
-      a.target = '_blank'; // Safari対策
-      linkContainer.appendChild(a);
-    }, 'image/png');
+    // 2. 少し待ってから保存（200ms）
+    setTimeout(() => {
+      // 再描画完了後にtoBlob実行
+      canvasElement.toBlob((blob) => {
+        if (!blob) {
+          console.warn(`image${i + 1} のBlobが取得できませんでした`);
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${label}.png`;
+        a.textContent = `${label}.png を保存`;
+        a.style.display = 'inline-block';
+        a.style.margin = '5px';
+        a.style.background = '#4CAF50';
+        a.style.color = 'white';
+        a.style.padding = '8px 12px';
+        a.style.borderRadius = '4px';
+        a.style.fontSize = '14px';
+        a.target = '_blank';
+        linkContainer.appendChild(a);
+      }, 'image/png');
+    }, 200);
   });
 }
 
