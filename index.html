@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>6枠画像エディタ</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
   <style>
     body {
       margin: 0; padding: 0;
@@ -76,7 +75,7 @@
 <input type="file" id="fileInput" multiple onchange="loadImages(event)">
 <div id="imageHolder"></div>
 
-<button id="saveAll" onclick="saveAllImages()">編集後の一括保存（PNG/1MB制限）</button>
+<button id="saveAll" onclick="saveAllImages()">個別に6枚保存（PNG/1MB制限）</button>
 
 <script>
 let labelOffset = 0;
@@ -131,10 +130,7 @@ function createBoxes() {
               top: 0,
               scaleX: 370 / newImg.width,
               scaleY: 320 / newImg.height,
-              angle: 0,
-              hasRotatingPoint: true,
-              cornerStyle: 'circle',
-              cornerColor: 'blue'
+              angle: 0
             });
             fabricCanvas.add(fabricImg);
             fabricCanvas.setActiveObject(fabricImg);
@@ -153,10 +149,7 @@ function createBoxes() {
             top: 0,
             scaleX: 370 / newImg.width,
             scaleY: 320 / newImg.height,
-            angle: 0,
-            hasRotatingPoint: true,
-            cornerStyle: 'circle',
-            cornerColor: 'blue'
+            angle: 0
           });
           fabricCanvas.add(fabricImg);
           fabricCanvas.setActiveObject(fabricImg);
@@ -214,48 +207,18 @@ function changeLabels(diff) {
   inputs.forEach((input, i) => input.value = (i + 1 + labelOffset).toString());
 }
 
-function dataURLToBlob(dataurl) {
-  const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-  bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-  while(n--){ u8arr[n] = bstr.charCodeAt(n); }
-  return new Blob([u8arr], {type:mime});
-}
-
 function saveAllImages() {
-  if (typeof JSZip === 'undefined') {
-    alert('JSZipが読み込まれていません。保存できません。');
-    return;
-  }
-
-  const zip = new JSZip();
-  const promises = canvases.map((fabricCanvas, i) => {
-    return new Promise((resolve) => {
-      const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
-      fabricCanvas.discardActiveObject();
-      fabricCanvas.renderAll();
-      let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
-      let blob = dataURLToBlob(dataURL);
-
-      if (blob.size > 1024 * 1024) {
-        dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.5 });
-        blob = dataURLToBlob(dataURL);
-      }
-
-      zip.file(label + ".png", blob);
-      resolve();
-    });
-  });
-
-  Promise.all(promises).then(() => {
-    zip.generateAsync({type:"blob"}).then(function(content) {
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = URL.createObjectURL(content);
-      a.download = "images.zip";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    });
+  canvases.forEach((fabricCanvas, i) => {
+    const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
+    fabricCanvas.discardActiveObject();
+    fabricCanvas.renderAll();
+    let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
+    let a = document.createElement('a');
+    a.href = dataURL;
+    a.download = label + ".png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   });
 }
 
