@@ -123,36 +123,32 @@ function createBoxes() {
         const file = files[0];
         const reader = new FileReader();
         reader.onload = function(evt) {
-          const newImg = new Image();
-          newImg.onload = () => {
-            const fabricImg = new fabric.Image(newImg, {
+          fabric.Image.fromURL(evt.target.result, function(fabricImg) {
+            fabricImg.set({
               left: 0,
               top: 0,
-              scaleX: 370 / newImg.width,
-              scaleY: 320 / newImg.height
+              scaleX: 370 / fabricImg.width,
+              scaleY: 320 / fabricImg.height
             });
             fabricCanvas.add(fabricImg);
             fabricCanvas.setActiveObject(fabricImg);
-          };
-          newImg.src = evt.target.result;
+          });
         };
         reader.readAsDataURL(file);
       } else {
         const imgId = e.dataTransfer.getData("imgId");
         const imgEl = document.getElementById(imgId);
         if (!imgEl) return;
-        const newImg = new Image();
-        newImg.onload = () => {
-          const fabricImg = new fabric.Image(newImg, {
+        fabric.Image.fromURL(imgEl.src, function(fabricImg) {
+          fabricImg.set({
             left: 0,
             top: 0,
-            scaleX: 370 / newImg.width,
-            scaleY: 320 / newImg.height
+            scaleX: 370 / fabricImg.width,
+            scaleY: 320 / fabricImg.height
           });
           fabricCanvas.add(fabricImg);
           fabricCanvas.setActiveObject(fabricImg);
-        };
-        newImg.src = imgEl.src;
+        });
       }
     };
 
@@ -212,7 +208,7 @@ function saveAllImages() {
     fabricCanvas.renderAll();
 
     setTimeout(() => {
-      const dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 1.0, enableRetinaScaling: false });
+      const dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 1.0 });
       const newWindow = window.open();
       newWindow.document.write(`<title>${label}.png</title>`);
       newWindow.document.write(`<p>右クリックして「名前を付けて画像を保存」してください</p>`);
