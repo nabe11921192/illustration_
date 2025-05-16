@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>6枠画像エディタ</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
   <style>
     body {
       margin: 0; padding: 0;
@@ -26,25 +27,26 @@
     }
     .container {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(2, 250px);
+      grid-template-columns: repeat(3, 370px);
+      grid-template-rows: repeat(2, 320px);
       gap: 10px;
-      width: 90%;
+      justify-content: center;
       margin: 100px auto 20px auto;
     }
     .box {
       position: relative;
       border: 2px dashed #999;
       background-color: #eee;
+      width: 370px;
+      height: 320px;
     }
     .label {
       position: absolute;
-      bottom: 5px;
-      left: 5px;
-      background: rgba(255,255,255,0.7);
-      padding: 2px 4px;
-      font-size: 12px;
-      z-index: 5;
+      bottom: -25px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
     }
     #imageHolder {
       display: flex;
@@ -75,7 +77,7 @@
 <input type="file" id="fileInput" multiple onchange="loadImages(event)">
 <div id="imageHolder"></div>
 
-<button id="saveAll" onclick="saveAllImages()">編集後の一括保存</button>
+<button id="saveAll" onclick="saveAllImages()">編集後の一括保存（PNG/1MB制限）</button>
 
 <script>
 let labelOffset = 0;
@@ -92,8 +94,8 @@ function createBoxes() {
     div.id = 'box' + i;
 
     const canvasEl = document.createElement('canvas');
-    canvasEl.width = 400;
-    canvasEl.height = 250;
+    canvasEl.width = 370;
+    canvasEl.height = 320;
     canvasEl.id = 'canvas' + i;
 
     const label = document.createElement('input');
@@ -110,7 +112,6 @@ function createBoxes() {
     });
     canvases.push(fabricCanvas);
 
-    // ドロップイベントをdiv（box）に設定
     div.ondragover = e => e.preventDefault();
     div.ondrop = function(e) {
       e.preventDefault();
@@ -119,10 +120,10 @@ function createBoxes() {
       const newImg = new Image();
       newImg.onload = () => {
         const fabricImg = new fabric.Image(newImg, {
-          left: 100,
-          top: 50,
-          scaleX: 0.5,
-          scaleY: 0.5,
+          left: 0,
+          top: 0,
+          scaleX: 370 / newImg.width,
+          scaleY: 320 / newImg.height,
           angle: 0,
           hasRotatingPoint: true,
           cornerStyle: 'circle',
@@ -166,13 +167,32 @@ function changeLabels(diff) {
   inputs.forEach((input, i) => input.value = (i + 1 + labelOffset).toString());
 }
 
+function dataURLToBlob(dataurl) {
+  const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+  bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+  return new Blob([u8arr], {type:mime});
+}
+
 function saveAllImages() {
+  const zip = new JSZip();
   canvases.forEach((fabricCanvas, i) => {
     const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
-    const link = document.createElement('a');
-    link.download = label + ".png";
-    link.href = fabricCanvas.toDataURL({ format: 'png' });
-    link.click();
+    let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
+    let blob = dataURLToBlob(dataURL);
+
+    if (blob.size > 1024 * 1024) { // 1MB以上なら圧縮
+      dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.5 });
+      blob = dataURLToBlob(dataURL);
+    }
+
+    zip.file(label + ".png", blob);
+  });
+  zip.generateAsync({type:"blob"}).then(function(content) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = "images.zip";
+    a.click();
   });
 }
 
