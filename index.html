@@ -28,10 +28,10 @@
     .container {
       display: grid;
       grid-template-columns: repeat(3, 370px);
-      grid-template-rows: repeat(2, 320px);
-      gap: 10px;
+      grid-template-rows: repeat(2, 340px);
+      gap: 40px 10px;
       justify-content: center;
-      margin: 100px auto 20px auto;
+      margin: 140px auto 20px auto;
     }
     .box {
       position: relative;
@@ -41,12 +41,11 @@
       height: 320px;
     }
     .label {
-      position: absolute;
-      bottom: -25px;
-      left: 0;
+      display: block;
       width: 100%;
       text-align: center;
       font-size: 14px;
+      margin-top: 4px;
     }
     #imageHolder {
       display: flex;
@@ -89,6 +88,11 @@ function createBoxes() {
   container.innerHTML = '';
   canvases.length = 0;
   for (let i = 0; i < boxCount; i++) {
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.flexDirection = 'column';
+    wrapper.style.alignItems = 'center';
+
     const div = document.createElement('div');
     div.className = 'box';
     div.id = 'box' + i;
@@ -97,14 +101,14 @@ function createBoxes() {
     canvasEl.width = 370;
     canvasEl.height = 320;
     canvasEl.id = 'canvas' + i;
+    div.appendChild(canvasEl);
+    wrapper.appendChild(div);
 
     const label = document.createElement('input');
     label.className = 'label';
     label.value = (i + 1 + labelOffset).toString();
-
-    div.appendChild(canvasEl);
-    div.appendChild(label);
-    container.appendChild(div);
+    wrapper.appendChild(label);
+    container.appendChild(wrapper);
 
     const fabricCanvas = new fabric.Canvas(canvasEl.id, {
       selection: true,
@@ -112,6 +116,7 @@ function createBoxes() {
     });
     canvases.push(fabricCanvas);
 
+    // ドラッグ&ドロップイベント
     div.ondragover = e => e.preventDefault();
     div.ondrop = function(e) {
       e.preventDefault();
@@ -130,9 +135,32 @@ function createBoxes() {
           cornerColor: 'blue'
         });
         fabricCanvas.add(fabricImg);
+        fabricCanvas.setActiveObject(fabricImg);
       };
       newImg.src = imgEl.src;
     };
+
+    // バックスペースで削除
+    fabricCanvas.on('mouse:down', function(opt) {
+      fabricCanvas.setActiveObject(opt.target);
+    });
+
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace') {
+        const active = fabricCanvas.getActiveObject();
+        if (active) {
+          fabricCanvas.remove(active);
+        }
+      }
+    });
+
+    // クリックで最前面へ
+    fabricCanvas.on('mouse:down', function(opt) {
+      if (opt.target) {
+        opt.target.bringToFront();
+        fabricCanvas.setActiveObject(opt.target);
+      }
+    });
   }
 }
 
@@ -176,23 +204,29 @@ function dataURLToBlob(dataurl) {
 
 function saveAllImages() {
   const zip = new JSZip();
-  canvases.forEach((fabricCanvas, i) => {
-    const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
-    let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
-    let blob = dataURLToBlob(dataURL);
+  const promises = canvases.map((fabricCanvas, i) => {
+    return new Promise((resolve) => {
+      const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
+      let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
+      let blob = dataURLToBlob(dataURL);
 
-    if (blob.size > 1024 * 1024) { // 1MB以上なら圧縮
-      dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.5 });
-      blob = dataURLToBlob(dataURL);
-    }
+      if (blob.size > 1024 * 1024) {
+        dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.5 });
+        blob = dataURLToBlob(dataURL);
+      }
 
-    zip.file(label + ".png", blob);
+      zip.file(label + ".png", blob);
+      resolve();
+    });
   });
-  zip.generateAsync({type:"blob"}).then(function(content) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(content);
-    a.download = "images.zip";
-    a.click();
+
+  Promise.all(promises).then(() => {
+    zip.generateAsync({type:"blob"}).then(function(content) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = "images.zip";
+      a.click();
+    });
   });
 }
 
