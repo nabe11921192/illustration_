@@ -83,7 +83,7 @@
 <div id="imageHolder"></div>
 
 <button id="saveAll" onclick="saveAllImages()">画像表示（右クリック保存）</button>
-<div class="version">Ver.1</div>
+<div class="version">Ver.2</div>
 
 <script>
 let labelOffset = 0;
@@ -140,7 +140,7 @@ function createBoxes() {
             });
             fabricCanvas.add(fabricImg);
             fabricCanvas.setActiveObject(fabricImg);
-          });
+          }, { crossOrigin: 'anonymous' });
         };
         reader.readAsDataURL(file);
       } else {
@@ -156,7 +156,7 @@ function createBoxes() {
           });
           fabricCanvas.add(fabricImg);
           fabricCanvas.setActiveObject(fabricImg);
-        });
+        }, { crossOrigin: 'anonymous' });
       }
     };
 
