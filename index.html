@@ -59,6 +59,21 @@
       font-size: 18px;
       padding: 10px 20px;
     }
+    #downloadLinks {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    #downloadLinks a {
+      background: #4CAF50;
+      color: white;
+      padding: 8px 12px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+    }
     .version {
       position: fixed;
       bottom: 5px;
@@ -83,7 +98,8 @@
 <div id="imageHolder"></div>
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
-<div class="version">Ver.4</div>
+<div id="downloadLinks"></div>
+<div class="version">Ver.5</div>
 
 <script>
 let labelOffset = 0;
@@ -205,6 +221,7 @@ function loadImages(e) {
 
 function resetAll() {
   createBoxes();
+  document.getElementById('downloadLinks').innerHTML = '';
 }
 
 function changeLabels(diff) {
@@ -214,6 +231,9 @@ function changeLabels(diff) {
 }
 
 function saveAllImages() {
+  const linkContainer = document.getElementById('downloadLinks');
+  linkContainer.innerHTML = '';
+
   canvases.forEach((fabricCanvas, i) => {
     const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
     fabricCanvas.discardActiveObject();
@@ -230,9 +250,8 @@ function saveAllImages() {
       const a = document.createElement('a');
       a.href = dataURL;
       a.download = label + '.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.textContent = `${label}.png を保存`;
+      linkContainer.appendChild(a);
     }, 0);
   });
 }
