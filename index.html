@@ -226,24 +226,31 @@ function saveAllImages() {
 
     setTimeout(() => {
       const canvasEl = fabricCanvas.getElement();
-      canvasEl.toBlob(blob => {
-        if (!blob) {
-          console.error("Blobが生成されませんでした。");
-          return;
-        }
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = label + '.png';
-        a.textContent = `${label}.png を保存`;
-        a.style.display = 'inline-block';
-        a.style.margin = '5px';
-        linkContainer.appendChild(a);
-      }, 'image/png', 1.0);
-    }, 100);
+      // Safari対応：描画待ちを保証
+      requestAnimationFrame(() => {
+        canvasEl.toBlob(blob => {
+          if (!blob) {
+            console.error("❌ Blobが生成されませんでした。Safariの制限の可能性あり。");
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = label + '.png';
+          a.textContent = `${label}.png を保存`;
+          a.style.display = 'inline-block';
+          a.style.margin = '5px';
+          linkContainer.appendChild(a);
+
+          console.log(`✅ 保存リンク生成: ${label}.png`);
+        }, 'image/png', 1.0);
+      });
+    }, 300); // Safariで安定させるために300ms待機
   });
 }
+
 
 createBoxes();
 </script>
