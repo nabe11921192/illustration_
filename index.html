@@ -2,63 +2,136 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>6枠画像ドロップ</title>
+  <title>6枠画像エディタ</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <style>
+    body {
+      margin: 0; padding: 0;
+      font-family: sans-serif;
+      background-color: #f9f9f9;
+    }
+    .toolbar {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+    button {
+      padding: 5px 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
     .container {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(2, 200px);
+      grid-template-rows: repeat(2, 250px);
       gap: 10px;
       width: 90%;
-      margin: 20px auto;
+      margin: 100px auto 20px auto;
     }
     .box {
-      border: 2px dashed #999;
       position: relative;
-      overflow: hidden;
-      background-color: #f0f0f0;
+      border: 2px dashed #999;
+      background-color: #eee;
     }
-    .box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .label {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background: rgba(255,255,255,0.7);
+      padding: 2px 4px;
+      font-size: 12px;
+      z-index: 5;
+    }
+    #imageHolder {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px;
+      justify-content: center;
+    }
+    #saveAll {
+      display: block;
+      margin: 20px auto;
+      font-size: 18px;
+      padding: 10px 20px;
     }
   </style>
 </head>
 <body>
 
-<h2 style="text-align:center;">画像を6つの枠にドラッグ＆ドロップ</h2>
-<div class="container">
-  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-  <div class="box" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+<div class="toolbar">
+  <button onclick="resetAll()">リセット</button>
+  <button onclick="changeLabels(-6)">< 戻る</button>
+  <button onclick="changeLabels(6)">進む ></button>
 </div>
 
+<h2 style="text-align:center;">画像を6つの枠にドラッグ＆ドロップ、編集</h2>
+<div class="container" id="canvasContainer"></div>
+
 <input type="file" id="fileInput" multiple onchange="loadImages(event)">
-<div id="imageHolder" style="display:flex; flex-wrap:wrap; gap:10px; margin:10px;"></div>
+<div id="imageHolder"></div>
+
+<button id="saveAll" onclick="saveAllImages()">編集後の一括保存</button>
 
 <script>
-function allowDrop(e) {
-  e.preventDefault();
-}
+let labelOffset = 0;
+const boxCount = 6;
+const canvases = [];
 
-function drop(e) {
-  e.preventDefault();
-  const imgId = e.dataTransfer.getData("imgId");
-  const draggedImg = document.getElementById(imgId);
-  const box = e.currentTarget;
+function createBoxes() {
+  const container = document.getElementById('canvasContainer');
+  container.innerHTML = '';
+  canvases.length = 0;
+  for (let i = 0; i < boxCount; i++) {
+    const div = document.createElement('div');
+    div.className = 'box';
+    div.id = 'box' + i;
 
-  if (box.querySelector("img")) {
-    box.removeChild(box.querySelector("img"));
+    const canvasEl = document.createElement('canvas');
+    canvasEl.width = 400;
+    canvasEl.height = 250;
+    canvasEl.id = 'canvas' + i;
+
+    const label = document.createElement('input');
+    label.className = 'label';
+    label.value = (i + 1 + labelOffset).toString();
+
+    div.appendChild(canvasEl);
+    div.appendChild(label);
+    container.appendChild(div);
+
+    const fabricCanvas = new fabric.Canvas(canvasEl.id, {
+      selection: true,
+      preserveObjectStacking: true
+    });
+    canvases.push(fabricCanvas);
+
+    canvasEl.ondragover = e => e.preventDefault();
+    canvasEl.ondrop = function(e) {
+      e.preventDefault();
+      const imgId = e.dataTransfer.getData("imgId");
+      const imgEl = document.getElementById(imgId);
+      const newImg = new Image();
+      newImg.onload = () => {
+        const fabricImg = new fabric.Image(newImg, {
+          left: 100,
+          top: 50,
+          scaleX: 0.5,
+          scaleY: 0.5,
+          angle: 0,
+          hasRotatingPoint: true,
+          cornerStyle: 'circle',
+          cornerColor: 'blue'
+        });
+        fabricCanvas.add(fabricImg);
+      };
+      newImg.src = imgEl.src;
+    };
   }
-
-  const newImg = draggedImg.cloneNode(true);
-  newImg.removeAttribute("id");
-  newImg.setAttribute("draggable", false);
-  box.appendChild(newImg);
 }
 
 function loadImages(e) {
@@ -81,6 +154,29 @@ function loadImages(e) {
     reader.readAsDataURL(file);
   });
 }
+
+function resetAll() {
+  createBoxes();
+}
+
+function changeLabels(diff) {
+  labelOffset += diff;
+  const inputs = document.querySelectorAll('.label');
+  inputs.forEach((input, i) => input.value = (i + 1 + labelOffset).toString());
+}
+
+function saveAllImages() {
+  canvases.forEach((fabricCanvas, i) => {
+    const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
+    const link = document.createElement('a');
+    link.download = label + ".png";
+    link.href = fabricCanvas.toDataURL({ format: 'png' });
+    link.click();
+  });
+}
+
+createBoxes();
 </script>
+
 </body>
 </html>
