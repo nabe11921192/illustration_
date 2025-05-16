@@ -99,7 +99,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.4</div>
+<div class="version">Ver.7.5</div>
 
 <script>
 let labelOffset = 0;
@@ -225,9 +225,13 @@ function saveAllImages() {
     const inputLabel = wrapper.querySelector('input.label');
     const label = inputLabel ? inputLabel.value : `image${i + 1}`;
 
+    // ✅ 残像・枠除去処理
     fabricCanvas.discardActiveObject();
+    fabricCanvas.selection = false;
+    fabricCanvas.clearContext(fabricCanvas.contextTop);
     fabricCanvas.requestRenderAll();
 
+    // 保存処理
     setTimeout(() => {
       canvasElement.toBlob((blob) => {
         if (!blob) {
@@ -250,7 +254,7 @@ function saveAllImages() {
         a.target = '_blank';
         linkContainer.appendChild(a);
       }, 'image/png');
-    }, 200); // ← これで選択境界線が残らないようにする
+    }, 200);
   });
 }
 
