@@ -239,7 +239,8 @@ function saveAllImages() {
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
 
-    requestAnimationFrame(() => {
+    // ← Safari安定化のため遅延実行（100ms）
+    setTimeout(() => {
       const dataURL = fabricCanvas.toDataURL({
         format: 'png',
         quality: 1.0,
@@ -254,9 +255,10 @@ function saveAllImages() {
       a.style.display = 'inline-block';
       a.style.margin = '5px';
       linkContainer.appendChild(a);
-    });
+    }, 100);
   });
 }
+
 
 createBoxes();
 </script>
