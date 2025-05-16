@@ -2,27 +2,33 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>6枠画像エディタ</title>
+  <title>6枠画像エディタ Ver.7.9</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <style>
-    body {
+    html, body {
       margin: 0; padding: 0;
+      width: 100%; height: 100vh;
+      overflow: hidden;
       font-family: sans-serif;
       background-color: #f9f9f9;
-    }
-    .toolbar {
-      position: fixed;
-      top: 10px;
-      left: 10px;
       display: flex;
       flex-direction: column;
+    }
+    .toolbar {
+      display: flex;
       gap: 10px;
-      z-index: 10;
+      padding: 10px;
     }
     button {
       padding: 5px 10px;
       font-size: 16px;
       cursor: pointer;
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
     .container {
       display: grid;
@@ -30,7 +36,8 @@
       grid-template-rows: repeat(2, 340px);
       gap: 40px 10px;
       justify-content: center;
-      margin: 140px auto 20px auto;
+      overflow: hidden;
+      flex-grow: 1;
     }
     .box {
       position: relative;
@@ -48,71 +55,58 @@
     }
     #imageHolder {
       display: flex;
-      flex-wrap: wrap;
       gap: 10px;
-      margin: 10px;
-      justify-content: center;
+      padding: 10px;
+      overflow-x: auto;
     }
-    #saveAll {
-      display: block;
-      margin: 20px auto;
-      font-size: 18px;
-      padding: 10px 20px;
+    #imageHolder img {
+      width: 100px;
+      cursor: grab;
     }
     #downloadLinks {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 40px;
-    }
-    #downloadLinks a {
-      background: #4CAF50;
-      color: white;
-      padding: 8px 12px;
-      text-decoration: none;
-      border-radius: 4px;
-      font-size: 14px;
+      margin: 10px;
     }
     .version {
-      position: fixed;
-      bottom: 5px;
-      right: 10px;
       font-size: 12px;
       color: #888;
+      text-align: right;
+      margin: 5px 10px;
     }
   </style>
 </head>
 <body>
-
-<div class="toolbar">
-  <button onclick="resetAll()">リセット</button>
-  <button onclick="changeLabels(-6)">＜No</button>
-  <button onclick="changeLabels(6)">No＞</button>
-  <button onclick="undo()">⬅️ 戻る</button>
-  <button onclick="redo()">➡️ 進む</button>
-</div>
-
-<h2 style="text-align:center;">画像を6つの枠にドラッグ＆ドロップ、編集</h2>
-<div class="container" id="canvasContainer"></div>
-
-<input type="file" id="fileInput" multiple onchange="loadImages(event)">
-<div id="imageHolder"></div>
-
-<button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
-<div id="downloadLinks"></div>
-<div class="version">Ver.7.8</div>
+  <div class="toolbar">
+    <button onclick="resetAll()">リセット</button>
+    <button onclick="changeLabels(-6)">＜No</button>
+    <button onclick="changeLabels(6)">No＞</button>
+    <button onclick="undo()">⬅️ 戻る</button>
+    <button onclick="redo()">➡️ 進む</button>
+    <input type="file" id="fileInput" multiple onchange="loadImages(event)">
+    <button onclick="saveAllImages()">画像を一括ダウンロード</button>
+  </div>
+  <div class="main">
+    <div class="container" id="canvasContainer"></div>
+    <div id="imageHolder"></div>
+    <div id="downloadLinks"></div>
+    <div class="version">Ver.7.9</div>
+  </div>
 
 <script>
 let labelOffset = 0;
 const boxCount = 6;
 const canvases = [];
-const historyMap = new Map(); // undo/redo用
+const historyMap = new Map();
+let copiedObject = null;
 
 function createBoxes() {
   const container = document.getElementById('canvasContainer');
   container.innerHTML = '';
   canvases.length = 0;
+
   for (let i = 0; i < boxCount; i++) {
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
@@ -142,29 +136,29 @@ function createBoxes() {
       selectionKey: null
     });
     canvases.push(fabricCanvas);
-    saveState(fabricCanvas); // 初期状態保存
+    saveState(fabricCanvas);
 
     div.ondragover = e => e.preventDefault();
     div.ondrop = function(e) {
       e.preventDefault();
-
       const imgId = e.dataTransfer.getData("imgId");
       const draggedImg = document.getElementById(imgId);
-
       if (draggedImg && draggedImg.src) {
         fabric.Image.fromURL(draggedImg.src, function(fabricImg) {
+          const scale = Math.min(370 / fabricImg.width, 320 / fabricImg.height);
           fabricImg.set({
             left: 0,
             top: 0,
             originX: 'left',
             originY: 'top',
-            scaleX: 370 / fabricImg.width,
-            scaleY: 320 / fabricImg.height
+            scaleX: scale,
+            scaleY: scale
           });
           fabricCanvas.add(fabricImg);
           fabricCanvas.setActiveObject(fabricImg);
           saveState(fabricCanvas);
         }, { crossOrigin: 'anonymous' });
+        draggedImg.remove(); // サムネイルから削除
       }
     };
 
@@ -189,6 +183,22 @@ function createBoxes() {
           saveState(fabricCanvas);
         }
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        const active = fabricCanvas.getActiveObject();
+        if (active) copiedObject = active.toObject();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedObject) {
+        fabric.util.enlivenObjects([copiedObject], function(objects) {
+          objects.forEach(obj => {
+            obj.left = 10;
+            obj.top = 10;
+            fabricCanvas.add(obj);
+            fabricCanvas.setActiveObject(obj);
+            fabricCanvas.renderAll();
+            saveState(fabricCanvas);
+          });
+        });
+      }
     });
   }
 }
@@ -196,15 +206,13 @@ function createBoxes() {
 function loadImages(e) {
   const files = e.target.files;
   const holder = document.getElementById("imageHolder");
-  holder.innerHTML = "";
   Array.from(files).forEach((file, i) => {
     const reader = new FileReader();
     reader.onload = function(evt) {
       const img = document.createElement("img");
       img.src = evt.target.result;
-      img.id = "img" + i;
+      img.id = "img" + Date.now() + i;
       img.draggable = true;
-      img.style.width = "100px";
       img.addEventListener("dragstart", (e) => {
         e.dataTransfer.setData("imgId", img.id);
       });
@@ -217,6 +225,7 @@ function loadImages(e) {
 function resetAll() {
   createBoxes();
   document.getElementById('downloadLinks').innerHTML = '';
+  document.getElementById('imageHolder').innerHTML = '';
 }
 
 function changeLabels(diff) {
@@ -228,37 +237,24 @@ function changeLabels(diff) {
 function saveAllImages() {
   const linkContainer = document.getElementById('downloadLinks');
   linkContainer.innerHTML = '';
-
   canvases.forEach((fabricCanvas, i) => {
     const canvasElement = fabricCanvas.getElement();
     const wrapper = canvasElement.closest('div').parentElement;
     const inputLabel = wrapper.querySelector('input.label');
     const label = inputLabel ? inputLabel.value : `image${i + 1}`;
-
     fabricCanvas.discardActiveObject();
     fabricCanvas.clearContext(fabricCanvas.contextTop);
     fabricCanvas.renderAll();
-
     setTimeout(() => {
       canvasElement.toBlob((blob) => {
-        if (!blob) {
-          console.warn(`image${i + 1} のBlobが取得できませんでした`);
-          return;
-        }
-
+        if (!blob) return;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `${label}.png`;
         a.textContent = `${label}.png を保存`;
         a.style.display = 'inline-block';
-        a.style.margin = '5px';
-        a.style.background = '#4CAF50';
-        a.style.color = 'white';
-        a.style.padding = '8px 12px';
-        a.style.borderRadius = '4px';
-        a.style.fontSize = '14px';
-        a.target = '_blank';
+        a.className = 'download-link';
         linkContainer.appendChild(a);
       }, 'image/png');
     }, 200);
@@ -267,9 +263,7 @@ function saveAllImages() {
 
 function saveState(canvas) {
   const id = canvas.getElement().id;
-  if (!historyMap.has(id)) {
-    historyMap.set(id, { undo: [], redo: [] });
-  }
+  if (!historyMap.has(id)) historyMap.set(id, { undo: [], redo: [] });
   const state = canvas.toJSON();
   historyMap.get(id).undo.push(state);
   historyMap.get(id).redo = [];
@@ -280,16 +274,13 @@ function restoreState(type) {
     const id = canvas.getElement().id;
     const history = historyMap.get(id);
     if (!history || !history[type].length) return;
-
     const current = canvas.toJSON();
     const state = history[type].pop();
     if (type === 'undo') history.redo.push(current);
     else history.undo.push(current);
-
     canvas.loadFromJSON(state, () => canvas.renderAll());
   });
 }
-
 function undo() { restoreState('undo'); }
 function redo() { restoreState('redo'); }
 
