@@ -99,7 +99,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.2</div>
+<div class="version">Ver.7.3</div>
 
 <script>
 let labelOffset = 0;
@@ -220,11 +220,15 @@ function saveAllImages() {
   linkContainer.innerHTML = '';
 
   canvases.forEach((fabricCanvas, i) => {
-    const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
+    const canvasElement = fabricCanvas.getElement();
+    const wrapper = canvasElement.closest('div').parentElement;
+    const inputLabel = wrapper.querySelector('input.label');
+    const label = inputLabel ? inputLabel.value : `image${i + 1}`;
+
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
 
-    fabricCanvas.getElement().toBlob((blob) => {
+    canvasElement.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -237,7 +241,7 @@ function saveAllImages() {
       a.style.padding = '8px 12px';
       a.style.borderRadius = '4px';
       a.style.fontSize = '14px';
-      a.target = '_blank'; // Safari対策で別タブでも開けるように
+      a.target = '_blank'; // Safari対策
       linkContainer.appendChild(a);
     }, 'image/png');
   });
