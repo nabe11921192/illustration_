@@ -87,8 +87,8 @@
 
 <div class="toolbar">
   <button onclick="resetAll()">リセット</button>
-  <button onclick="changeLabels(-6)">< 戻る</button>
-  <button onclick="changeLabels(6)">進む ></button>
+  <button onclick="changeLabels(-6)">＜No</button>
+  <button onclick="changeLabels(6)">No＞</button>
   <button onclick="undo()">⬅️ 戻る</button>
   <button onclick="redo()">➡️ 進む</button>
 </div>
@@ -101,7 +101,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.7</div>
+<div class="version">Ver.7.8</div>
 
 <script>
 let labelOffset = 0;
@@ -113,7 +113,6 @@ function createBoxes() {
   const container = document.getElementById('canvasContainer');
   container.innerHTML = '';
   canvases.length = 0;
-
   for (let i = 0; i < boxCount; i++) {
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
@@ -148,26 +147,24 @@ function createBoxes() {
     div.ondragover = e => e.preventDefault();
     div.ondrop = function(e) {
       e.preventDefault();
-      const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        const file = files[0];
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          fabric.Image.fromURL(evt.target.result, function(fabricImg) {
-            fabricImg.set({
-              left: 0,
-              top: 0,
-              originX: 'left',
-              originY: 'top',
-              scaleX: 370 / fabricImg.width,
-              scaleY: 320 / fabricImg.height
-            });
-            fabricCanvas.add(fabricImg);
-            fabricCanvas.setActiveObject(fabricImg);
-            saveState(fabricCanvas); // 追加後保存
-          }, { crossOrigin: 'anonymous' });
-        };
-        reader.readAsDataURL(file);
+
+      const imgId = e.dataTransfer.getData("imgId");
+      const draggedImg = document.getElementById(imgId);
+
+      if (draggedImg && draggedImg.src) {
+        fabric.Image.fromURL(draggedImg.src, function(fabricImg) {
+          fabricImg.set({
+            left: 0,
+            top: 0,
+            originX: 'left',
+            originY: 'top',
+            scaleX: 370 / fabricImg.width,
+            scaleY: 320 / fabricImg.height
+          });
+          fabricCanvas.add(fabricImg);
+          fabricCanvas.setActiveObject(fabricImg);
+          saveState(fabricCanvas);
+        }, { crossOrigin: 'anonymous' });
       }
     };
 
@@ -189,7 +186,7 @@ function createBoxes() {
         const active = fabricCanvas.getActiveObject();
         if (active) {
           fabricCanvas.remove(active);
-          saveState(fabricCanvas); // 削除後保存
+          saveState(fabricCanvas);
         }
       }
     });
@@ -267,8 +264,6 @@ function saveAllImages() {
     }, 200);
   });
 }
-
-// ---- Undo / Redo 関連 ----
 
 function saveState(canvas) {
   const id = canvas.getElement().id;
