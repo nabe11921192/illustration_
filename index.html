@@ -213,6 +213,7 @@ function changeLabels(diff) {
   inputs.forEach((input, i) => input.value = (i + 1 + labelOffset).toString());
 }
 
+<script>
 function saveAllImages() {
   const linkContainer = document.getElementById('downloadLinks');
   linkContainer.innerHTML = '';
@@ -222,25 +223,30 @@ function saveAllImages() {
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
 
-    // Safariで確実にリンクが生成されるよう100ms遅延
+    // Safari完全対応：canvas → blob → URL
     setTimeout(() => {
-      const dataURL = fabricCanvas.toDataURL({
-        format: 'png',
-        quality: 1.0,
-        multiplier: 2,
-        enableRetinaScaling: true
-      });
+      const canvasEl = fabricCanvas.getElement();
+      canvasEl.toBlob(blob => {
+        if (!blob) {
+          console.error("Blobが生成されませんでした。");
+          return;
+        }
 
-      const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = label + '.png';
-      a.textContent = `${label}.png を保存`;
-      a.style.display = 'inline-block';
-      a.style.margin = '5px';
-      linkContainer.appendChild(a);
-    }, 100);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = label + '.png';
+        a.textContent = `${label}.png を保存`;
+        a.style.display = 'inline-block';
+        a.style.margin = '5px';
+
+        linkContainer.appendChild(a);
+      }, 'image/png', 1.0);
+    }, 100); // Safari安定化のため遅延
   });
 }
+</script>
+
 
 createBoxes();
 </script>
