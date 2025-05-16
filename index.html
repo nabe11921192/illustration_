@@ -116,7 +116,6 @@ function createBoxes() {
     });
     canvases.push(fabricCanvas);
 
-    // ドラッグ&ドロップイベント
     div.ondragover = e => e.preventDefault();
     div.ondrop = function(e) {
       e.preventDefault();
@@ -166,9 +165,11 @@ function createBoxes() {
       }
     };
 
-    // バックスペースで削除
     fabricCanvas.on('mouse:down', function(opt) {
       fabricCanvas.setActiveObject(opt.target);
+      if (opt.target) {
+        opt.target.bringToFront();
+      }
     });
 
     window.addEventListener('keydown', function(e) {
@@ -177,14 +178,6 @@ function createBoxes() {
         if (active) {
           fabricCanvas.remove(active);
         }
-      }
-    });
-
-    // クリックで最前面へ
-    fabricCanvas.on('mouse:down', function(opt) {
-      if (opt.target) {
-        opt.target.bringToFront();
-        fabricCanvas.setActiveObject(opt.target);
       }
     });
   }
@@ -233,6 +226,8 @@ function saveAllImages() {
   const promises = canvases.map((fabricCanvas, i) => {
     return new Promise((resolve) => {
       const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
+      fabricCanvas.discardActiveObject();
+      fabricCanvas.renderAll();
       let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
       let blob = dataURLToBlob(dataURL);
 
@@ -249,9 +244,12 @@ function saveAllImages() {
   Promise.all(promises).then(() => {
     zip.generateAsync({type:"blob"}).then(function(content) {
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = URL.createObjectURL(content);
       a.download = "images.zip";
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
     });
   });
 }
