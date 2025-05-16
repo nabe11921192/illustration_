@@ -75,7 +75,7 @@
 <input type="file" id="fileInput" multiple onchange="loadImages(event)">
 <div id="imageHolder"></div>
 
-<button id="saveAll" onclick="saveAllImages()">個別に6枚保存（PNG/1MB制限）</button>
+<button id="saveAll" onclick="saveAllImages()">画像表示（右クリック保存）</button>
 
 <script>
 let labelOffset = 0;
@@ -213,12 +213,10 @@ function saveAllImages() {
 
     setTimeout(() => {
       const dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
-      const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = label + ".png";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const newWindow = window.open();
+      newWindow.document.write(`<title>${label}.png</title>`);
+      newWindow.document.write(`<p>右クリックして「名前を付けて画像を保存」してください</p>`);
+      newWindow.document.write(`<img src="${dataURL}" style="max-width:100%">`);
     }, 0);
   });
 }
