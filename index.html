@@ -83,7 +83,7 @@
 <div id="imageHolder"></div>
 
 <button id="saveAll" onclick="saveAllImages()">画像表示（右クリック保存）</button>
-<div class="version">Ver.2</div>
+<div class="version">Ver.3</div>
 
 <script>
 let labelOffset = 0;
@@ -135,6 +135,8 @@ function createBoxes() {
             fabricImg.set({
               left: 0,
               top: 0,
+              originX: 'left',
+              originY: 'top',
               scaleX: 370 / fabricImg.width,
               scaleY: 320 / fabricImg.height
             });
@@ -151,6 +153,8 @@ function createBoxes() {
           fabricImg.set({
             left: 0,
             top: 0,
+            originX: 'left',
+            originY: 'top',
             scaleX: 370 / fabricImg.width,
             scaleY: 320 / fabricImg.height
           });
@@ -216,7 +220,12 @@ function saveAllImages() {
     fabricCanvas.renderAll();
 
     setTimeout(() => {
-      const dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 1.0 });
+      const dataURL = fabricCanvas.toDataURL({
+        format: 'png',
+        quality: 1.0,
+        multiplier: 2,
+        enableRetinaScaling: true
+      });
       const newWindow = window.open();
       newWindow.document.write(`<title>${label}.png</title>`);
       newWindow.document.write(`<p>右クリックして「名前を付けて画像を保存」してください</p>`);
