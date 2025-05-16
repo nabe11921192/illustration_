@@ -99,7 +99,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.5</div>
+<div class="version">Ver.6</div>
 
 <script>
 let labelOffset = 0;
@@ -239,7 +239,7 @@ function saveAllImages() {
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       const dataURL = fabricCanvas.toDataURL({
         format: 'png',
         quality: 1.0,
@@ -251,8 +251,10 @@ function saveAllImages() {
       a.href = dataURL;
       a.download = label + '.png';
       a.textContent = `${label}.png を保存`;
+      a.style.display = 'inline-block';
+      a.style.margin = '5px';
       linkContainer.appendChild(a);
-    }, 0);
+    });
   });
 }
 
