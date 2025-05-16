@@ -129,8 +129,7 @@ function createBoxes() {
               left: 0,
               top: 0,
               scaleX: 370 / newImg.width,
-              scaleY: 320 / newImg.height,
-              angle: 0
+              scaleY: 320 / newImg.height
             });
             fabricCanvas.add(fabricImg);
             fabricCanvas.setActiveObject(fabricImg);
@@ -148,8 +147,7 @@ function createBoxes() {
             left: 0,
             top: 0,
             scaleX: 370 / newImg.width,
-            scaleY: 320 / newImg.height,
-            angle: 0
+            scaleY: 320 / newImg.height
           });
           fabricCanvas.add(fabricImg);
           fabricCanvas.setActiveObject(fabricImg);
@@ -212,13 +210,16 @@ function saveAllImages() {
     const label = fabricCanvas.lowerCanvasEl.parentElement.querySelector('input.label').value;
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
-    let dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
-    let a = document.createElement('a');
-    a.href = dataURL;
-    a.download = label + ".png";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+
+    setTimeout(() => {
+      const dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 0.92 });
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = label + ".png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }, 0);
   });
 }
 
