@@ -99,7 +99,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.1</div>
+<div class="version">Ver.7.2</div>
 
 <script>
 let labelOffset = 0;
@@ -227,7 +227,7 @@ function saveAllImages() {
     setTimeout(() => {
       const canvasEl = fabricCanvas.getElement();
 
-      // Safari対応：描画待ちを保証
+      // Safari対応：描画を安定してからBlob生成
       requestAnimationFrame(() => {
         canvasEl.toBlob(blob => {
           if (!blob) {
@@ -247,10 +247,9 @@ function saveAllImages() {
           console.log(`✅ 保存リンク生成: ${label}.png`);
         }, 'image/png', 1.0);
       });
-    }, 300); // Safariで安定させるために300ms待機
+    }, 300); // Safari安定化のため300ms待機
   });
 }
-
 
 createBoxes();
 </script>
