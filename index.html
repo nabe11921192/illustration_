@@ -89,6 +89,8 @@
   <button onclick="resetAll()">リセット</button>
   <button onclick="changeLabels(-6)">< 戻る</button>
   <button onclick="changeLabels(6)">進む ></button>
+  <button onclick="undo()">⬅️ 戻る</button>
+  <button onclick="redo()">➡️ 進む</button>
 </div>
 
 <h2 style="text-align:center;">画像を6つの枠にドラッグ＆ドロップ、編集</h2>
@@ -99,12 +101,13 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.6</div>
+<div class="version">Ver.7.7</div>
 
 <script>
 let labelOffset = 0;
 const boxCount = 6;
 const canvases = [];
+const historyMap = new Map(); // undo/redo用
 
 function createBoxes() {
   const container = document.getElementById('canvasContainer');
@@ -134,12 +137,13 @@ function createBoxes() {
     wrapper.appendChild(label);
     container.appendChild(wrapper);
 
-    // ✅ 選択ボックス完全無効化
     const fabricCanvas = new fabric.Canvas(canvasEl.id, {
       selection: false,
-      preserveObjectStacking: true
+      preserveObjectStacking: true,
+      selectionKey: null
     });
     canvases.push(fabricCanvas);
+    saveState(fabricCanvas); // 初期状態保存
 
     div.ondragover = e => e.preventDefault();
     div.ondrop = function(e) {
@@ -160,6 +164,7 @@ function createBoxes() {
             });
             fabricCanvas.add(fabricImg);
             fabricCanvas.setActiveObject(fabricImg);
+            saveState(fabricCanvas); // 追加後保存
           }, { crossOrigin: 'anonymous' });
         };
         reader.readAsDataURL(file);
@@ -167,8 +172,14 @@ function createBoxes() {
     };
 
     fabricCanvas.on('mouse:down', function(opt) {
-      fabricCanvas.setActiveObject(opt.target);
+      canvases.forEach(c => {
+        if (c !== fabricCanvas) {
+          c.discardActiveObject();
+          c.requestRenderAll();
+        }
+      });
       if (opt.target) {
+        fabricCanvas.setActiveObject(opt.target);
         opt.target.bringToFront();
       }
     });
@@ -178,6 +189,7 @@ function createBoxes() {
         const active = fabricCanvas.getActiveObject();
         if (active) {
           fabricCanvas.remove(active);
+          saveState(fabricCanvas); // 削除後保存
         }
       }
     });
@@ -226,7 +238,6 @@ function saveAllImages() {
     const inputLabel = wrapper.querySelector('input.label');
     const label = inputLabel ? inputLabel.value : `image${i + 1}`;
 
-    // ✅ 選択解除 + レイヤークリア + 強制再描画
     fabricCanvas.discardActiveObject();
     fabricCanvas.clearContext(fabricCanvas.contextTop);
     fabricCanvas.renderAll();
@@ -256,6 +267,36 @@ function saveAllImages() {
     }, 200);
   });
 }
+
+// ---- Undo / Redo 関連 ----
+
+function saveState(canvas) {
+  const id = canvas.getElement().id;
+  if (!historyMap.has(id)) {
+    historyMap.set(id, { undo: [], redo: [] });
+  }
+  const state = canvas.toJSON();
+  historyMap.get(id).undo.push(state);
+  historyMap.get(id).redo = [];
+}
+
+function restoreState(type) {
+  canvases.forEach(canvas => {
+    const id = canvas.getElement().id;
+    const history = historyMap.get(id);
+    if (!history || !history[type].length) return;
+
+    const current = canvas.toJSON();
+    const state = history[type].pop();
+    if (type === 'undo') history.redo.push(current);
+    else history.undo.push(current);
+
+    canvas.loadFromJSON(state, () => canvas.renderAll());
+  });
+}
+
+function undo() { restoreState('undo'); }
+function redo() { restoreState('redo'); }
 
 createBoxes();
 </script>
