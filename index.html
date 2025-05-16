@@ -84,6 +84,7 @@
   </style>
 </head>
 <body>
+
 <div class="toolbar">
   <button onclick="resetAll()">リセット</button>
   <button onclick="changeLabels(-6)">< 戻る</button>
@@ -98,7 +99,8 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7</div>
+<div class="version">Ver.7.1</div>
+
 <script>
 let labelOffset = 0;
 const boxCount = 6;
@@ -213,7 +215,6 @@ function changeLabels(diff) {
   inputs.forEach((input, i) => input.value = (i + 1 + labelOffset).toString());
 }
 
-<script>
 function saveAllImages() {
   const linkContainer = document.getElementById('downloadLinks');
   linkContainer.innerHTML = '';
@@ -223,7 +224,6 @@ function saveAllImages() {
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
 
-    // Safari完全対応：canvas → blob → URL
     setTimeout(() => {
       const canvasEl = fabricCanvas.getElement();
       canvasEl.toBlob(blob => {
@@ -239,16 +239,14 @@ function saveAllImages() {
         a.textContent = `${label}.png を保存`;
         a.style.display = 'inline-block';
         a.style.margin = '5px';
-
         linkContainer.appendChild(a);
       }, 'image/png', 1.0);
-    }, 100); // Safari安定化のため遅延
+    }, 100);
   });
 }
-</script>
-
 
 createBoxes();
 </script>
+
 </body>
 </html>
