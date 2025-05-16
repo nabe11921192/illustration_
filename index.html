@@ -224,18 +224,22 @@ function saveAllImages() {
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
 
-    setTimeout(() => {
-      const canvasEl = fabricCanvas.getElement();
-      const dataURL = canvasEl.toDataURL('image/png');
-
+    fabricCanvas.getElement().toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = label + '.png';
+      a.href = url;
+      a.download = `${label}.png`;
       a.textContent = `${label}.png を保存`;
       a.style.display = 'inline-block';
       a.style.margin = '5px';
+      a.style.background = '#4CAF50';
+      a.style.color = 'white';
+      a.style.padding = '8px 12px';
+      a.style.borderRadius = '4px';
+      a.style.fontSize = '14px';
+      a.target = '_blank'; // Safari対策で別タブでも開けるように
       linkContainer.appendChild(a);
-    }, 200);
+    }, 'image/png');
   });
 }
 
