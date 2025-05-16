@@ -99,7 +99,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.3</div>
+<div class="version">Ver.7.4</div>
 
 <script>
 let labelOffset = 0;
@@ -225,13 +225,10 @@ function saveAllImages() {
     const inputLabel = wrapper.querySelector('input.label');
     const label = inputLabel ? inputLabel.value : `image${i + 1}`;
 
-    // 1. 選択解除（確実に）
     fabricCanvas.discardActiveObject();
-    fabricCanvas.requestRenderAll(); // ←次の描画フレームで確実に更新
+    fabricCanvas.requestRenderAll();
 
-    // 2. 少し待ってから保存（200ms）
     setTimeout(() => {
-      // 再描画完了後にtoBlob実行
       canvasElement.toBlob((blob) => {
         if (!blob) {
           console.warn(`image${i + 1} のBlobが取得できませんでした`);
@@ -253,7 +250,7 @@ function saveAllImages() {
         a.target = '_blank';
         linkContainer.appendChild(a);
       }, 'image/png');
-    }, 200);
+    }, 200); // ← これで選択境界線が残らないようにする
   });
 }
 
