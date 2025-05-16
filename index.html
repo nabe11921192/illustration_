@@ -99,7 +99,7 @@
 
 <button id="saveAll" onclick="saveAllImages()">画像を一括ダウンロード（Safari対応）</button>
 <div id="downloadLinks"></div>
-<div class="version">Ver.7.5</div>
+<div class="version">Ver.7.6</div>
 
 <script>
 let labelOffset = 0;
@@ -134,8 +134,9 @@ function createBoxes() {
     wrapper.appendChild(label);
     container.appendChild(wrapper);
 
+    // ✅ 選択ボックス完全無効化
     const fabricCanvas = new fabric.Canvas(canvasEl.id, {
-      selection: true,
+      selection: false,
       preserveObjectStacking: true
     });
     canvases.push(fabricCanvas);
@@ -225,13 +226,11 @@ function saveAllImages() {
     const inputLabel = wrapper.querySelector('input.label');
     const label = inputLabel ? inputLabel.value : `image${i + 1}`;
 
-    // ✅ 残像・枠除去処理
+    // ✅ 選択解除 + レイヤークリア + 強制再描画
     fabricCanvas.discardActiveObject();
-    fabricCanvas.selection = false;
     fabricCanvas.clearContext(fabricCanvas.contextTop);
-    fabricCanvas.requestRenderAll();
+    fabricCanvas.renderAll();
 
-    // 保存処理
     setTimeout(() => {
       canvasElement.toBlob((blob) => {
         if (!blob) {
