@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>6枠画像エディタ</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js"></script>
   <style>
     body {
       margin: 0; padding: 0;
@@ -222,6 +222,11 @@ function dataURLToBlob(dataurl) {
 }
 
 function saveAllImages() {
+  if (typeof JSZip === 'undefined') {
+    alert('JSZipが読み込まれていません。保存できません。');
+    return;
+  }
+
   const zip = new JSZip();
   const promises = canvases.map((fabricCanvas, i) => {
     return new Promise((resolve) => {
