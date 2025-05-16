@@ -110,8 +110,9 @@ function createBoxes() {
     });
     canvases.push(fabricCanvas);
 
-    canvasEl.ondragover = e => e.preventDefault();
-    canvasEl.ondrop = function(e) {
+    // ドロップイベントをdiv（box）に設定
+    div.ondragover = e => e.preventDefault();
+    div.ondrop = function(e) {
       e.preventDefault();
       const imgId = e.dataTransfer.getData("imgId");
       const imgEl = document.getElementById(imgId);
